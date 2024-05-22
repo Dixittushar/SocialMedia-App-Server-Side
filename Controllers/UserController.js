@@ -101,7 +101,38 @@ export const followUser = async (req, res) => {
 
         res.status(200).json("User followed");
       } else {
-        res.status(403).json("Forbidden");
+        res.status(403).json("Already following");
+      }
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  }
+};
+
+export const unfollowUser = async (req, res) => {
+  const id = req.params.id;
+  const { currentUserId } = req.body;
+
+  if (id === currentUserId) {
+    res.status(403).json("Action forbidden");
+  } else {
+    try {
+      const unfollowUser = await UserModel.findById(id);
+      const unfollowingUser = await UserModel.findById(currentUserId);
+
+      if (unfollowUser.following.includes(currentUserId)) {
+        await unfollowUser.updateOne({ $pull: { following: currentUserId } });
+        await unfollowingUser.updateOne({ $pull: { followers: id } });
+
+        res.status(200).json("Unfollowed the User");
+      } else if (!unfollowUser.following.includes(currentUserId)) {
+        res
+          .status(403)
+          .json(
+            "Action cannot be performed as no such user exists to unfollow"
+          );
+      } else {
+        res.status(403).json("User already unfollowed");
       }
     } catch (error) {
       res.status(500).json(error);
